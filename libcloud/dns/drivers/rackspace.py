@@ -223,7 +223,11 @@ class RackspaceDNSDriver(DNSDriver, OpenStackDriverMixin):
                 record = self._to_record(data=item, zone=zone)
                 yield record
 
-            if _rackspace_result_has_more(records_list, len(records), limit):
+            # https://developer.rackspace.com/docs/cloud-dns/v1/api-reference/records/
+            # list all records response does not appear to contain the usual paginated collection 'links' sub-dict,
+            # only the standard totalEntries and records keys, so _rackspace_result_has_more never returns True
+            total_entries = records_list.get('totalEntries', 0)
+            if ((offset + limit) < total_entries) or _rackspace_result_has_more(records_list, len(records), limit):
                 offset += limit
             else:
                 break
